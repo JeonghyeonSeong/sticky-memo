@@ -9,7 +9,7 @@
       
       <div class="note-body" ref="scrollContainer">
         <div v-if="gameLogs.length === 0" class="system-msg">
-          끝말잇기를 시작하세요...
+          메모를 자유롭게 남겨보세요...
         </div>
         <div v-for="(item, index) in gameLogs" :key="index" class="memo-line">
           <span class="bullet">•</span> {{ item.word }}
@@ -44,6 +44,7 @@ import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import { initializeApp } from 'firebase/app';
 import { getDatabase, ref as dbRef, push, onValue, remove } from 'firebase/database';
 
+// Firebase 설정 (정현님 프로젝트 정보 유지)
 const firebaseConfig = {
   apiKey: "AIzaSyBbUmMXG01BetxUCRcx03gpbYmk-vb-SXo",
   authDomain: "sticker-2da9a.firebaseapp.com",
@@ -77,8 +78,6 @@ const handleKeydown = (e) => {
 };
 
 onMounted(() => {
-  // 브라우저가 허용하는 안정적인 사이즈로 설정 (350px 정도가 가장 안전합니다)
-  window.resizeTo(350, 480); 
   window.addEventListener('keydown', handleKeydown);
   onValue(logsRef, (snapshot) => {
     const data = snapshot.val();
@@ -94,43 +93,25 @@ onUnmounted(() => { window.removeEventListener('keydown', handleKeydown); });
 const submitWord = () => {
   const word = newWord.value.trim();
   if (!word) return;
-  if (gameLogs.value.length > 0) {
-    const lastWord = gameLogs.value[gameLogs.value.length - 1].word;
-    const lastChar = lastWord.charAt(lastWord.length - 1);
-    if (word[0] !== lastChar) {
-      alert(`'${lastChar}'로 시작해야 합니다!`);
-      return;
-    }
-  }
   push(logsRef, { word, timestamp: Date.now() });
   newWord.value = '';
 };
 </script>
 
 <style>
-/* 모든 요소에 box-sizing 적용하여 테두리가 너비에 포함되게 함 */
 * { box-sizing: border-box; }
-
-html, body, #app {
-  margin: 0 !important;
-  padding: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
-  overflow: hidden !important;
-  background-color: #fef3b4 !important;
-}
+html, body, #app { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #fef3b4; }
 
 .app-container {
   width: 100%;
   height: 100%;
   position: relative;
   display: flex;
-  justify-content: center; /* 창이 커져도 중앙 정렬 */
+  justify-content: flex-start; /* [수정] 왼쪽 정렬 */
 }
 
 .sticky-note {
   width: 100%;
-  max-width: 100%; /* 부모 너비를 넘지 않음 */
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -155,13 +136,20 @@ html, body, #app {
   overflow-y: auto;
   font-size: 14px;
   line-height: 1.7;
-  -ms-overflow-style: none;
+  text-align: left; /* [수정] 텍스트 왼쪽 정렬 */
   scrollbar-width: none;
 }
 .note-body::-webkit-scrollbar { display: none; }
 
-.memo-line { color: #333; margin-bottom: 4px; word-break: break-all; }
-.bullet { color: #888; margin-right: 5px; }
+.memo-line { 
+  color: #333; 
+  margin-bottom: 4px; 
+  word-break: break-all;
+  display: flex; /* 불렛과 텍스트 나란히 배치 */
+  align-items: flex-start;
+}
+
+.bullet { color: #888; margin-right: 8px; flex-shrink: 0; }
 
 .hidden-input {
   border: none;
@@ -170,47 +158,17 @@ html, body, #app {
   outline: none;
   font-size: 14px;
   width: 100%;
+  text-align: left; /* [수정] 입력창도 왼쪽 정렬 */
   border-top: 1px dashed rgba(0,0,0,0.1);
 }
 
-/* 짤림 방지 전면 오버레이 */
-.full-overlay {
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background-color: #fef3b4;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
-}
-
-.overlay-content {
-  width: 100%;
-  padding: 20px;
-  text-align: center;
-}
-
+.full-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: #fef3b4; display: flex; justify-content: center; align-items: center; z-index: 9999; }
+.overlay-content { width: 100%; padding: 20px; text-align: center; }
 .warning-text { color: #ff5f56; font-weight: bold; font-size: 12px; margin-bottom: 5px; }
 .main-text { font-size: 15px; color: #333; margin-bottom: 25px; font-weight: bold; }
-
-.btn-group {
-  display: flex;
-  flex-direction: column; /* 세로 배치가 좁은 창에서 가장 안전함 */
-  gap: 10px;
-  padding: 0 20px;
-}
-
-.btn-group button {
-  width: 100%;
-  padding: 12px 0;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: bold;
-}
-
+.btn-group { display: flex; flex-direction: column; gap: 10px; padding: 0 20px; }
+.btn-group button { width: 100%; padding: 12px 0; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold; }
 .btn-confirm { background-color: #ff5f56; color: white; }
 .btn-hide { background-color: rgba(0,0,0,0.05); color: #666; }
+.system-msg { color: #aaa; text-align: left; margin-top: 5px; font-size: 12px; }
 </style>
